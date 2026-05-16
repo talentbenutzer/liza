@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LIZA - Lebensmittel-Intoleranz- & Zutaten-Analyse
 
-## Getting Started
+LIZA hilft Menschen mit Lebensmittelunverträglichkeiten, Allergien oder persönlichen Lebensmittel-Einschränkungen dabei, Zutatenlisten von Verpackungen schneller einzuschätzen.
 
-First, run the development server:
+## Lokales Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+LIZA wurde mit Next.js, Tailwind CSS und shadcn/ui entwickelt.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Dependencies installieren (falls nicht bereits geschehen):
+   ```bash
+   npm install
+   ```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+2. Entwicklungs-Server starten:
+   ```bash
+   npm run dev
+   ```
+   Die App ist danach unter `http://localhost:3000` erreichbar.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## MVP Funktionen
+- **Landingpage** mit Einführung in LIZA.
+- **Demo-Modus**: Teste die App mit generierten Mock-Daten.
+- **Nutzer-Profil**: Eigene Lebensmittel-Einschränkungen anlegen, bearbeiten und löschen (inkl. Schweregrad und Spuren-Handling).
+- **Lisa-Profil**: Ein vordefiniertes Profil zur Erkennung kritischer Lebensmittel.
+- **Zutaten scannen**: Mock-OCR-Eingabe von Zutatenlisten zur Risiko-Bewertung.
+- **Scan-Ergebnis**: Bewertung mit Ampelsystem (Rot, Gelb, Grün) und Ausweisung von problematischen Zutaten.
+- **Historie**: Speicherung von durchgeführten Scans.
 
-## Learn More
+## LocalStorage Hinweise
+In der MVP-Version werden alle Daten ausschließlich lokal im Browser gespeichert (kein Backend, keine Datenbank).
+Folgende Keys werden im LocalStorage verwendet:
+- `liza_demo_mode`
+- `liza_food_restrictions`
+- `liza_scan_history`
+- `liza_use_lisa_profile`
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Wichtiger Medizinischer Disclaimer
+LIZA ersetzt keine medizinische Beratung. Die Analyse basiert auf manueller Eingabe oder OCR-Text und den persönlichen Angaben. Es können Fehler in der Erkennung oder Zuordnung auftreten. Besonders bei Allergien oder potenziell schweren Reaktionen müssen die Angaben auf der Originalverpackung immer eigenständig und kritisch geprüft werden.
