@@ -2,16 +2,10 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { initializeDemoData } from '@/lib/storage/localProfileStorage';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const router = useRouter();
-
-  const handleStartDemo = () => {
-    initializeDemoData();
-    router.push('/scan');
-  };
 
   const handleStartScan = () => {
     router.push('/scan');
@@ -34,22 +28,10 @@ export default function Home() {
       </p>
 
       <div className="flex flex-col sm:flex-row gap-4 mb-16">
-        <Button size="lg" onClick={handleStartDemo} className="rounded-full text-lg h-14 px-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25">
-          Demo starten
-        </Button>
-        <Button size="lg" variant="outline" onClick={handleStartScan} className="rounded-full text-lg h-14 px-8 border-2">
+        <Button size="lg" onClick={handleStartScan} className="rounded-full text-lg h-14 px-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25">
           Scan starten
         </Button>
       </div>
-
-      <Card className="max-w-md mx-auto bg-card/50 backdrop-blur-sm border-border/50">
-        <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
-            Lokaler MVP. Daten werden nur in diesem Browser gespeichert.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }

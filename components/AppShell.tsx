@@ -1,12 +1,10 @@
 'use client';
 
 import { AppHeader } from './AppHeader';
-import { DemoModeBanner } from './DemoModeBanner';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground font-sans antialiased">
-      <DemoModeBanner />
       <main className="flex-1 container mx-auto px-4 pt-8 pb-32">
         {children}
       </main>
