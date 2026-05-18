@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Nunito } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "../components/AppShell";
 
-const inter = Inter({
+const nunito = Nunito({
   variable: "--font-sans",
   subsets: ["latin"],
 });
@@ -21,7 +21,7 @@ export default function RootLayout({
   return (
     <html
       lang="de"
-      className={`${inter.variable} font-sans h-full antialiased`}
+      className={`${nunito.variable} font-sans h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <AppShell>{children}</AppShell>

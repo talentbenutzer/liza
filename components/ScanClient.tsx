@@ -1,173 +1,215 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
-import { ImageUploader } from './ImageUploader';
-import { OcrProgress } from './OcrProgress';
 import { extractTextFromImage } from '@/lib/ocr/extractTextFromImage';
-import { AlertCircle, FileText, Image as ImageIcon } from 'lucide-react';
+import { Upload, Camera, AlertCircle } from 'lucide-react';
 
 export function ScanClient() {
   const router = useRouter();
-  const [text, setText] = useState('');
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  
+  const [stream, setStream] = useState<MediaStream | null>(null);
   const [isOcrRunning, setIsOcrRunning] = useState(false);
-  const [ocrProgress, setOcrProgress] = useState(0);
-  const [ocrStatus, setOcrStatus] = useState('');
   const [ocrError, setOcrError] = useState('');
 
-  // Cleanup object URL when component unmounts or previewUrl changes
   useEffect(() => {
+    async function startCamera() {
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+        setStream(mediaStream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+      } catch (err) {
+        console.error("Camera error:", err);
+      }
+    }
+    
+    if (!isOcrRunning) {
+      startCamera();
+    }
+    
     return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [previewUrl]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOcrRunning]);
 
-  const handleFileSelect = (file: File) => {
-    setSelectedFile(file);
-    setOcrError('');
-    
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
     }
-    setPreviewUrl(URL.createObjectURL(file));
   };
 
-  const handleRunOcr = async () => {
-    if (!selectedFile) {
-      setOcrError('Bitte wähle zuerst ein Bild aus.');
-      return;
-    }
-
+  const processFile = async (file: File) => {
+    stopCamera();
     setIsOcrRunning(true);
     setOcrError('');
-    setOcrProgress(0);
-    setOcrStatus('OCR wird vorbereitet');
 
     try {
-      const result = await extractTextFromImage(selectedFile, (progress, status) => {
-        setOcrProgress(progress);
-        setOcrStatus(status);
-      });
+      const result = await extractTextFromImage(file);
 
       if (result.text && result.text.trim().length > 0) {
-        setText(result.text);
-        setOcrStatus('Erkennung abgeschlossen');
+        sessionStorage.setItem('liza_current_scan', result.text);
+        router.push('/result');
       } else {
-        setOcrError('Es konnte kein Text erkannt werden. Bitte versuche ein schärferes Foto oder füge den Text manuell ein.');
+        setOcrError('Es konnte kein Text erkannt werden. Bitte versuche ein schärferes Foto.');
+        setIsOcrRunning(false);
       }
     } catch (error) {
       console.error('OCR failed:', error);
-      setOcrError('OCR ist fehlgeschlagen. Bitte versuche es erneut oder nutze die manuelle Eingabe.');
-    } finally {
+      setOcrError('OCR ist fehlgeschlagen. Bitte versuche es erneut.');
       setIsOcrRunning(false);
     }
   };
 
-  const handleMockData = () => {
-    setText('Zutaten: Zucker, Weizenmehl, Magermilchpulver, Kakaobutter, Erdnüsse, Sojalecithin. Kann Spuren von Haselnüssen enthalten.');
-    setOcrError('');
+  const capturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    if (video.videoWidth === 0) {
+      setOcrError('Kamera ist noch nicht bereit.');
+      return;
+    }
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        setOcrError('Konnte kein Bild aufnehmen.');
+        return;
+      }
+      const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+      processFile(file);
+    }, 'image/jpeg', 0.9);
   };
 
-  const handleAnalyze = () => {
-    if (!text.trim()) return;
-    sessionStorage.setItem('liza_current_scan', text);
-    router.push('/result');
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processFile(file);
+    }
   };
 
-  return (
-    <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight mb-2">Zutaten scannen</h1>
-        <p className="text-muted-foreground">
-          Fotografiere oder lade ein Bild der Zutatenliste hoch. Achte auf gutes Licht, scharfen Fokus und möglichst geraden Winkel.
+  if (isOcrRunning) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-12 animate-in fade-in duration-500">
+        <div className="flex gap-4 text-7xl font-bold text-primary tracking-widest">
+          {['L', 'I', 'Z', 'A'].map((letter, i) => (
+            <span 
+              key={i} 
+              className="animate-bounce drop-shadow-md"
+              style={{ animationDelay: `${i * 0.15}s` }}
+            >
+              {letter}
+            </span>
+          ))}
+        </div>
+        <p className="text-xl font-bold text-muted-foreground animate-pulse text-center">
+          Zutaten werden überprüft ...
         </p>
       </div>
+    );
+  }
 
-      <Card className="border-2 border-primary/20 shadow-lg">
-        <CardContent className="p-6 space-y-6">
-          
-          <div className="space-y-4">
-            <ImageUploader onFileSelect={handleFileSelect} disabled={isOcrRunning} />
-            
-            {previewUrl && (
-              <div className="mt-4 flex justify-center">
-                <div className="relative w-full max-w-sm rounded-lg overflow-hidden border">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={previewUrl} alt="Vorschau der Zutatenliste" className="w-full h-auto object-contain max-h-64 bg-black/5" />
-                </div>
-              </div>
-            )}
-            
-            {selectedFile && !isOcrRunning && (
-              <Button 
-                onClick={handleRunOcr} 
-                className="w-full gap-2"
-                size="lg"
-              >
-                <ImageIcon className="w-5 h-5" />
-                Text aus Bild erkennen
-              </Button>
-            )}
-
-            {isOcrRunning && (
-              <Button disabled className="w-full gap-2" size="lg">
-                <FileText className="w-5 h-5 animate-pulse" />
-                Erkennung läuft...
-              </Button>
-            )}
-
-            {isOcrRunning && (
-              <OcrProgress progress={ocrProgress} status={ocrStatus} />
-            )}
-
-            {ocrError && (
-              <div className="bg-destructive/15 text-destructive border border-destructive/20 p-4 rounded-md flex gap-3 items-start mt-4">
-                <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
-                <div className="text-sm font-medium leading-relaxed">
-                  {ocrError}
-                </div>
-              </div>
-            )}
+  return (
+    <div className="max-w-md mx-auto space-y-6 flex flex-col items-center animate-in fade-in duration-500 pb-20">
+      
+      {ocrError && (
+        <div className="bg-destructive/15 text-destructive border border-destructive/20 p-4 rounded-xl flex gap-3 items-start w-full">
+          <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
+          <div className="text-sm font-medium leading-relaxed">
+            {ocrError}
           </div>
+        </div>
+      )}
 
-          <div className="relative py-4">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Ergebnis & Analyse
-              </span>
-            </div>
-          </div>
+      <div className="w-full text-center space-y-2">
+        <h1 className="text-3xl font-bold">Zutaten scannen</h1>
+        <p className="text-muted-foreground text-sm">Fotografiere die Zutatenliste</p>
+      </div>
 
-          <Textarea 
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Erkannter Text erscheint hier oder Zutatenliste manuell einfügen..."
-            className="min-h-[150px] text-lg p-4 resize-y"
-            disabled={isOcrRunning}
+      {/* Camera Viewfinder */}
+      <div className="relative w-full aspect-[3/4] bg-black rounded-3xl overflow-hidden shadow-2xl flex items-center justify-center border-[6px] border-white/50">
+        {stream ? (
+          <video 
+            ref={videoRef} 
+            autoPlay 
+            playsInline 
+            muted 
+            className="absolute inset-0 w-full h-full object-cover"
           />
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-            <Button variant="outline" onClick={handleMockData} className="w-full sm:w-auto" disabled={isOcrRunning}>
-              Mock-Zutatenliste verwenden
-            </Button>
-            <Button size="lg" onClick={handleAnalyze} disabled={!text.trim() || isOcrRunning} className="w-full sm:w-auto px-8">
-              Analyse starten
-            </Button>
+        ) : (
+          <div className="text-white/50 flex flex-col items-center justify-center gap-2">
+            <Camera className="w-8 h-8 opacity-50" />
+            <span>Kamera wird gestartet...</span>
           </div>
-        </CardContent>
-      </Card>
+        )}
+        <canvas ref={canvasRef} className="hidden" />
+        
+        {/* Viewfinder overlay */}
+        <div className="absolute inset-8 border-2 border-white/30 rounded-2xl pointer-events-none" />
+        
+        {/* Prominent Red Capture Button */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+          <button 
+            onClick={capturePhoto}
+            className="w-20 h-20 bg-[var(--liza-red)] rounded-full border-4 border-white shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center"
+            aria-label="Foto aufnehmen"
+          >
+            <Camera className="w-8 h-8 text-white" />
+          </button>
+        </div>
+      </div>
+
+      {/* Upload Button at the bottom */}
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        ref={fileInputRef}
+        onChange={handleFileUpload}
+      />
+      
+      <div className="flex w-full gap-4">
+        <Button 
+          variant="outline" 
+          size="lg"
+          className="flex-1 rounded-full gap-2 shadow-sm font-semibold h-14"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <Upload className="w-5 h-5" />
+          Bild hochladen
+        </Button>
+
+        <Button 
+          variant="secondary"
+          size="lg"
+          className="rounded-full gap-2 shadow-sm font-semibold h-14 px-6"
+          onClick={() => {
+            sessionStorage.setItem('liza_current_scan', 'Zutaten: Zucker, Weizenmehl, Magermilchpulver, Kakaobutter, Erdnüsse, Sojalecithin. Kann Spuren von Haselnüssen enthalten.');
+            router.push('/result');
+          }}
+        >
+          Mock
+        </Button>
+      </div>
     </div>
   );
 }

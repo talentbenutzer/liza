@@ -44,6 +44,34 @@ export default function LisaProfilePage() {
     setFoods(getMergedLisaFoods());
   };
 
+  const handleAdd = (status: 'happy' | 'no_go') => {
+    const newName = prompt(`Neues ${status === 'happy' ? 'Happy' : 'No-Go'} Food eingeben:`);
+    if (!newName) return;
+    
+    const newCategory = prompt('Kategorie (z.B. Sonstiges):', 'Sonstiges');
+    if (newCategory === null) return;
+    
+    const newAliases = prompt('Aliase (optional, kommagetrennt):');
+    
+    const id = `lisa-custom-${status}-${Date.now()}`;
+    const newItem: LisaFoodItem = {
+      id,
+      name: newName.trim(),
+      category: newCategory.trim() || 'Sonstiges',
+      status,
+      aliases: newAliases ? newAliases.split(',').map(s => s.trim()).filter(Boolean) : []
+    };
+    
+    saveLisaFoodOverride(id, newItem);
+    setFoods(getMergedLisaFoods());
+  };
+
+  const handleDelete = (food: LisaFoodItem) => {
+    if (!confirm(`Möchtest du "${food.name}" wirklich löschen?`)) return;
+    saveLisaFoodOverride(food.id, null);
+    setFoods(getMergedLisaFoods());
+  };
+
   const nogoCount = foods.filter(f => f.status === 'no_go').length;
   const happyCount = foods.filter(f => f.status === 'happy').length;
 
@@ -63,13 +91,13 @@ export default function LisaProfilePage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-16">
       <div>
-        <h1 className="text-4xl font-bold tracking-tight mb-2">Lisa-Profil</h1>
+        <h1 className="text-4xl font-bold tracking-tight mb-2">Mein Profil</h1>
         <p className="text-muted-foreground">
-          "Lisa's Happy Nahrungsmittel" - Ein vordefiniertes Profil mit sicheren und zu vermeidenden Lebensmitteln.
+          Deine persönlichen Happy Foods und No-Gos. Passe die Liste an, um die Analyse zu verbessern.
         </p>
         <div className="mt-4 flex gap-4 text-sm font-medium">
-          <div className="text-green-600 dark:text-green-400">{happyCount} Happy Foods</div>
-          <div className="text-red-600 dark:text-red-400">{nogoCount} No-Go Foods</div>
+          <div className="text-liza-green">{happyCount} Happy Foods</div>
+          <div className="text-liza-red">{nogoCount} No-Go Foods</div>
         </div>
       </div>
 
@@ -89,7 +117,7 @@ export default function LisaProfilePage() {
       </Card>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-end">
-        <div className="w-full sm:w-2/3">
+        <div className="w-full sm:w-1/2">
           <Label htmlFor="search" className="mb-2 block">Suchen (Name oder Alias)</Label>
           <Input 
             id="search" 
@@ -98,7 +126,7 @@ export default function LisaProfilePage() {
             onChange={(e) => setSearch(e.target.value)} 
           />
         </div>
-        <div className="w-full sm:w-1/3">
+        <div className="w-full sm:w-1/4">
           <Label htmlFor="filter" className="mb-2 block">Filter</Label>
           <Select value={filter} onValueChange={(val: any) => setFilter(val)}>
             <SelectTrigger>
@@ -111,6 +139,15 @@ export default function LisaProfilePage() {
             </SelectContent>
           </Select>
         </div>
+      </div>
+      
+      <div className="flex gap-4">
+        <Button onClick={() => handleAdd('happy')} className="flex-1 rounded-full shadow-md bg-liza-green hover:bg-liza-green/90 text-white">
+          + Happy Food
+        </Button>
+        <Button onClick={() => handleAdd('no_go')} className="flex-1 rounded-full shadow-md bg-liza-red hover:bg-liza-red/90 text-white">
+          + No-Go Food
+        </Button>
       </div>
 
       <div>
@@ -134,7 +171,8 @@ export default function LisaProfilePage() {
                     )}
                   </div>
                   <div className="flex flex-col gap-2 ml-4">
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(food)}>Bearbeiten</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(food)} className="rounded-full">Bearbeiten</Button>
+                    <Button variant="destructive" size="sm" onClick={() => handleDelete(food)} className="rounded-full bg-liza-red hover:bg-liza-red/90 text-white">Löschen</Button>
                   </div>
                 </li>
               ))}

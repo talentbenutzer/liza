@@ -1,60 +1,48 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { Camera, Clock } from 'lucide-react';
+
+const FemaleAvatar = ({ className }: { className?: string }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" />
+    <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" />
+    <path d="M7 8c-1 2-1 4-1 6" />
+    <path d="M17 8c1 2 1 4 1 6" />
+  </svg>
+);
 
 export function AppHeader() {
-  const [user, setUser] = useState<any>(null);
-  const supabase = createClient();
-  const router = useRouter();
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user || null);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
-  };
-
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Link href="/" className="font-bold text-2xl tracking-tighter text-primary">
-            LIZA
+    <header className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[320px] rounded-full bg-foreground text-background shadow-2xl">
+      <div className="px-6 h-16 flex items-center justify-between relative">
+        <Link href="/lisa-profile" className="p-2 hover:text-primary transition-colors" aria-label="Profil">
+          <FemaleAvatar className="w-6 h-6" />
+        </Link>
+
+        {/* Prominenter Scan Button in der Mitte */}
+        <div className="absolute left-1/2 -translate-x-1/2 -top-5">
+          <Link 
+            href="/scan" 
+            className="flex items-center justify-center w-16 h-16 bg-primary text-primary-foreground rounded-full shadow-lg hover:scale-105 transition-transform border-4 border-background"
+            aria-label="Scan"
+          >
+            <Camera className="w-7 h-7" />
           </Link>
         </div>
-        <nav className="flex items-center gap-4 text-sm font-medium overflow-x-auto whitespace-nowrap">
-          <Link href="/profile" className="hover:text-primary transition-colors">Profil</Link>
-          <Link href="/lisa-profile" className="hover:text-primary transition-colors">Lisa-Profil</Link>
-          <Link href="/scan" className="hover:text-primary transition-colors">Scan</Link>
-          <Link href="/history" className="hover:text-primary transition-colors">Historie</Link>
-          <Link href="/settings" className="hover:text-primary transition-colors">Einstellungen</Link>
-          
-          <div className="h-4 w-px bg-border mx-2" />
-          
-          {user ? (
-            <button onClick={handleLogout} className="text-muted-foreground hover:text-primary transition-colors">
-              Logout
-            </button>
-          ) : (
-            <Link href="/login" className="text-muted-foreground hover:text-primary transition-colors">
-              Login
-            </Link>
-          )}
-        </nav>
+
+        <Link href="/history" className="p-2 hover:text-primary transition-colors" aria-label="Historie">
+          <Clock className="w-6 h-6" />
+        </Link>
       </div>
     </header>
   );

@@ -4,12 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { analyzeIngredients } from '@/lib/analyzer/analyzeIngredients';
 import { analyzeLisaProfile } from '@/lib/lisa/analyzeLisaProfile';
-import { getFoodRestrictions } from '@/lib/storage/localProfileStorage';
 import { getUseLisaProfile, getMergedLisaFoods } from '@/lib/storage/localLisaProfileStorage';
 import { saveScanResult } from '@/lib/storage/localScanHistoryStorage';
-import { AnalysisResult, ScanHistoryItem } from '@/lib/analyzer/types';
+import { ScanHistoryItem } from '@/lib/analyzer/types';
 import { LisaProfileAnalysisResult } from '@/lib/lisa/types';
 import { generateId } from '@/lib/utils/id';
 
@@ -22,7 +20,6 @@ function RiskBadge({ level, label }: { level: string, label?: string }) {
 export default function ResultPage() {
   const router = useRouter();
   const [text, setText] = useState('');
-  const [userResult, setUserResult] = useState<AnalysisResult | null>(null);
   const [lisaResult, setLisaResult] = useState<LisaProfileAnalysisResult | null>(null);
   const [isSaved, setIsSaved] = useState(false);
 
@@ -34,40 +31,28 @@ export default function ResultPage() {
     }
     setText(scanText);
 
-    const restrictions = getFoodRestrictions();
-    const result = analyzeIngredients(scanText, restrictions);
-    setUserResult(result);
-
-    if (getUseLisaProfile()) {
-      const lisaRes = analyzeLisaProfile(scanText, getMergedLisaFoods());
-      setLisaResult(lisaRes);
-    }
+    const lisaRes = analyzeLisaProfile(scanText, getMergedLisaFoods());
+    setLisaResult(lisaRes);
   }, [router]);
 
-  if (!userResult) return <div className="p-8 text-center">Analysiere...</div>;
+  if (!lisaResult) return <div className="p-8 text-center">Analysiere...</div>;
 
   const handleSave = () => {
-    const overallRisk = lisaResult && lisaResult.status === 'red' ? 'red' : userResult.status === 'red' ? 'red' : (lisaResult && lisaResult.status === 'yellow') || userResult.status === 'yellow' ? 'yellow' : 'green';
+    const overallRisk = lisaResult.status;
     
     const item: ScanHistoryItem = {
       id: generateId(),
       createdAt: Date.now(),
       originalText: text,
       resultStatus: overallRisk,
-      matches: userResult.matches,
-      lisaProfileResult: lisaResult || undefined,
+      matches: [],
+      lisaProfileResult: lisaResult,
     };
     saveScanResult(item);
     setIsSaved(true);
   };
 
-  const getOverallStatus = () => {
-    if (userResult.status === 'red' || lisaResult?.status === 'red') return 'red';
-    if (userResult.status === 'yellow' || lisaResult?.status === 'yellow') return 'yellow';
-    return 'green';
-  };
-
-  const overallStatus = getOverallStatus();
+  const overallStatus = lisaResult.status;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-16">
@@ -84,28 +69,6 @@ export default function ResultPage() {
         </div>
       </div>
 
-      <Card className="border-t-4" style={{ borderTopColor: overallStatus === 'red' ? 'var(--liza-red)' : overallStatus === 'yellow' ? 'var(--liza-yellow)' : 'var(--liza-green)' }}>
-        <CardContent className="p-6">
-          <h2 className="font-semibold text-lg mb-2">Nutzerprofil-Ergebnis</h2>
-          <p className="text-sm font-medium mb-4">{userResult.summary}</p>
-          
-          {userResult.matches.length > 0 ? (
-            <ul className="space-y-3">
-              {userResult.matches.map((m, i) => (
-                <li key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div>
-                    <span className="font-semibold">{m.matchedText}</span>
-                    <span className="text-xs text-muted-foreground ml-2">({m.explanation})</span>
-                  </div>
-                  <div className="mt-2 sm:mt-0"><RiskBadge level={m.riskLevel} /></div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">Keine Übereinstimmungen mit deinem persönlichen Profil gefunden.</div>
-          )}
-        </CardContent>
-      </Card>
 
       {lisaResult && (
         <Card className="border-t-4" style={{ borderTopColor: lisaResult.status === 'red' ? 'var(--liza-red)' : lisaResult.status === 'yellow' ? 'var(--liza-yellow)' : 'var(--liza-green)' }}>
