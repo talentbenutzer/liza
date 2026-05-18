@@ -40,4 +40,4 @@ Die App wurde auf Supabase umgestellt. Die Datenbank-Struktur findest du in `sup
 Teile der App verwenden weiterhin einen LocalStorage-Fallback, wenn du als Gast surfst.
 
 ## Wichtiger Medizinischer Disclaimer
-LIZA ersetzt keine medizinische Beratung. Die Analyse basiert auf manueller Eingabe oder OCR-Text und den persönlichen Angaben. Es können Fehler in der Erkennung oder Zuordnung auftreten. Besonders bei Allergien oder potenziell schweren Reaktionen müssen die Angaben auf der Originalverpackung immer eigenständig und kritisch geprüft werden.
+LIZA ersetzt keine medizinische Beratung. Die Analyse basiert auf manueller Eingabe oder OCR-Text und den persönlichen Angaben. Es können Fehler in der Erkennung oder Zuordnung auftreten. Besonders bei Allergien oder potenzdiell schweredn Reaktionen müssen die Angaben auf der Originalverpackung immer eigenständig und kritisch geprüft werden.
