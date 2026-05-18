@@ -1,9 +1,16 @@
 import { LisaProfileAnalysisResult, LisaFoodItem } from './types';
-import { normalizeText } from '../analyzer/normalizeText';
 import { predefinedLisaFoods } from './lisaFoods';
 
+export function normalizeTextForLisa(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[.,;:\n\r!?'"()[\]{}]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function analyzeLisaProfile(text: string, customFoods?: LisaFoodItem[]): LisaProfileAnalysisResult {
-  const normalizedText = normalizeText(text);
+  const normalizedText = normalizeTextForLisa(text);
   
   const happyMatches: string[] = [];
   const noGoMatches: string[] = [];
@@ -17,10 +24,9 @@ export function analyzeLisaProfile(text: string, customFoods?: LisaFoodItem[]): 
     let matchedName = '';
     
     for (const term of searchTerms) {
-      // Create a regex to match the term as a whole word, 
-      // considering German umlauts which are non-word characters in standard \b sometimes
-      // Since normalizedText has punctuation replaced by spaces, we can check space boundaries
-      const regex = new RegExp(`(^|\\s)${term}(?=\\s|$)`, 'i');
+      const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Create a regex to match the term as a whole word
+      const regex = new RegExp(`(^|\\s)${escapedTerm}(?=\\s|$)`, 'i');
       if (regex.test(normalizedText)) {
         matchedName = food.name;
         break;
